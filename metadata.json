@@ -1,0 +1,12 @@
+{
+  "name": "Heliotrope",
+  "description": "A centralized artisan marketplace for Bangladesh's home-based sellers with AI-powered try-on and recommendations.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "AI Fashion Assistant",
+    "Virtual Try-On",
+    "Artisan Marketplace"
+  ]
+}

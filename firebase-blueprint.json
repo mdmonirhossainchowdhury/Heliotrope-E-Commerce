@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["buyer", "seller", "admin"] },
+        "idNumber": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "idNumber"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Artisan product details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "rating": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "price", "imageUrl", "sellerId"]
+    },
+    "WishlistItem": {
+      "title": "Wishlist Item",
+      "description": "A product saved by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "productId": { "type": "string" },
+        "savedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "productId"]
+    },
+    "ClosetItem": {
+      "title": "Closet Item",
+      "description": "User's digital closet item",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["userId", "imageUrl"]
+    },
+    "Shop": {
+      "title": "Shop",
+      "description": "Seller shop details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "name": { "type": "string" },
+        "country": { "type": "string" },
+        "district": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sellerId", "name", "country", "district", "category"]
+    },
+    "LiveSession": {
+      "title": "Live Session",
+      "description": "Streaming sessions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "live", "ended"] },
+        "startTime": { "type": "string", "format": "date-time" },
+        "thumbnail": { "type": "string" },
+        "viewers": { "type": "number" },
+        "likes": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sellerId", "title", "status"]
+    },
+    "LiveComment": {
+      "title": "Live Comment",
+      "description": "Comments on live sessions",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sessionId", "userId", "text"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Artisan products"
+    },
+    "/wishlists/{wishlistId}": {
+      "schema": "WishlistItem",
+      "description": "Saved products"
+    },
+    "/closets/{closetId}": {
+      "schema": "ClosetItem",
+      "description": "Personal digital closet"
+    },
+    "/shops/{shopId}": {
+      "schema": "Shop",
+      "description": "Artisan shops"
+    },
+    "/live_sessions/{sessionId}": {
+      "schema": "LiveSession",
+      "description": "Streaming sessions"
+    },
+    "/live_comments/{commentId}": {
+      "schema": "LiveComment",
+      "description": "Live session comments"
+    }
+  }
+}

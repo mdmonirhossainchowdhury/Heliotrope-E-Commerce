@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // User Schema
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.email is string &&
+             data.role in ['buyer', 'seller', 'admin'];
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false; 
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'phone', 'address', 'idNumber']);
+    }
+
+    // Product Schema
+    function isValidProduct(data) {
+      return data.keys().hasAll(['title', 'price', 'imageUrl', 'sellerId']) &&
+             data.title is string && data.title.size() < 200 &&
+             data.price is number && data.price >= 0 &&
+             data.imageUrl is string &&
+             data.sellerId is string;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidProduct(incoming()) && incoming().sellerId == request.auth.uid;
+      allow update: if isSignedIn() && existing().sellerId == request.auth.uid && isValidProduct(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'price', 'category', 'imageUrl', 'tags', 'updatedAt']);
+      allow delete: if isSignedIn() && existing().sellerId == request.auth.uid;
+    }
+
+    // Wishlist Schema
+    function isValidWishlist(data) {
+      return data.keys().hasAll(['userId', 'productId']) &&
+             data.userId == request.auth.uid &&
+             data.productId is string;
+    }
+
+    match /wishlists/{wishlistId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidWishlist(incoming());
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Closet Schema
+    function isValidCloset(data) {
+      return data.keys().hasAll(['userId', 'imageUrl']) &&
+             data.userId == request.auth.uid &&
+             data.imageUrl is string;
+    }
+
+    match /closets/{closetId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidCloset(incoming());
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Shop Schema
+    function isValidShop(data) {
+      return data.keys().hasAll(['sellerId', 'name', 'country', 'district', 'category']) &&
+             data.sellerId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 &&
+             data.country is string &&
+             data.district is string &&
+             data.category is string;
+    }
+
+    match /shops/{shopId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidShop(incoming());
+      allow update: if isSignedIn() && existing().sellerId == request.auth.uid && isValidShop(incoming());
+      allow delete: if isSignedIn() && existing().sellerId == request.auth.uid;
+    }
+
+    // Live Session Schema
+    function isValidLiveSession(data) {
+      return data.keys().hasAll(['sellerId', 'title', 'status']) &&
+             data.sellerId == request.auth.uid &&
+             data.title is string &&
+             data.status in ['scheduled', 'live', 'ended'];
+    }
+
+    match /live_sessions/{sessionId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidLiveSession(incoming());
+      allow update: if isSignedIn() && (
+        (existing().sellerId == request.auth.uid && isValidLiveSession(incoming())) ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['viewers', 'likes'])) // Allow public updates for stats
+      );
+      allow delete: if isSignedIn() && existing().sellerId == request.auth.uid;
+    }
+
+    // Live Comments
+    function isValidComment(data) {
+      return data.keys().hasAll(['sessionId', 'userId', 'text']) &&
+             data.userId == request.auth.uid &&
+             data.text is string && data.text.size() > 0;
+    }
+
+    match /live_comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidComment(incoming());
+      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || 
+                    get(/databases/$(database)/documents/live_sessions/$(resource.data.sessionId)).data.sellerId == request.auth.uid);
+    }
+  }
+}
